@@ -1,14 +1,13 @@
 package BatchJob
 
 import Domain._
-import org.apache.spark.sql.{SQLContext, SaveMode}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{ SaveMode}
+import Utils.SparkUtils._
 
 object BatchJob {
   def main(args: Array[String]): Unit = {
-    val conf = new SparkConf().setAppName("Spark Streaming")
-    val sc = new SparkContext(conf)
-    implicit val sqlContext = new SQLContext(sc)
+    val sc= getSparkContext("Spark Batch")
+    val sqlContext = getSQLContext(sc)
 
     import org.apache.spark.sql.functions._
     import sqlContext.implicits._

@@ -13,5 +13,7 @@ object Settings {
     lazy val pages = webloggen.getInt("pages")
     lazy val visitors = webloggen.getInt("visitors")
     lazy val filePath = webloggen.getString("file_path")
+    lazy val destPath = webloggen.getString("dest_path")
+    lazy val numFiles = webloggen.getInt("number_of_files")
   }
 }
