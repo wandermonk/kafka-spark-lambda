@@ -9,6 +9,7 @@ object SparkUtils {
   def getSparkContext(appName: String): SparkContext = {
     val checkPointDirectory = "hdfs://quickstart.cloudera:8020/spark/checkpoint"
     val conf = new SparkConf().setAppName(appName)
+      .set("spark.cassandra.conection.host","localhost")
     val sc = SparkContext.getOrCreate(conf)
     sc.setCheckpointDir(checkPointDirectory)
     sc

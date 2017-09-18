@@ -1,9 +1,14 @@
 package clickstream
 
-import java.io.FileWriter
+//import java.io.FileWriter
+import java.util.Properties
 
 import config.Settings
-import org.apache.commons.io.FileUtils
+import org.apache.commons.codec.StringDecoder
+//import org.apache.commons.io.FileUtils
+import org.apache.kafka.clients.producer.{KafkaProducer, Producer, ProducerConfig, ProducerRecord}
+import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.kafka.KafkaUtils
 
 import scala.util.Random
 
@@ -19,12 +24,25 @@ object LogProducer extends App {
   var Pages = (0 to wlc.pages).map("Page-"+_)
 
   val rnd = new Random()
-  val file = wlc.filePath
-  val destPath = wlc.destPath
+
+  val topic = wlc.kafkaTopic
+
+  val props = new Properties()
+  props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, wlc.kafkaHost)
+  props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, wlc.kafkaKeySerializer)
+  props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, wlc.kafkaValueSerializer)
+  props.put(ProducerConfig.ACKS_CONFIG, wlc.kafkaAcknowledgement)
+  props.put(ProducerConfig.CLIENT_ID_CONFIG, wlc.kafkaClientID)
+
+  val kafkaProducer:Producer[Nothing,String] = new KafkaProducer[Nothing,String](props)
+  println(kafkaProducer.partitionsFor(topic))
+
+  //val file = wlc.filePath
+  //val destPath = wlc.destPath
 
   for(fileCount <- 0 to wlc.numFiles) {
 
-    val fileWriter = new FileWriter(file, true)
+    //val fileWriter = new FileWriter(file, true)
     val incrementTimeFrequency = rnd.nextInt(wlc.records - 1) + 1
 
     var timeStamp = System.currentTimeMillis()
@@ -50,7 +68,9 @@ object LogProducer extends App {
       val product = Products(rnd.nextInt(Products.length - 1))
 
       val line = s"$adjustedTimeStamp\t$referrer\t$action\t$prevPage\t$visitor\t$page\t$product\n"
-      fileWriter.write(line)
+      val producerRecord = new ProducerRecord(topic,line)
+      kafkaProducer.send(producerRecord)
+      //fileWriter.write(line)
 
       if (iteration % incrementTimeFrequency == 0) {
         println(s"Sent $iteration messages!")
@@ -59,11 +79,14 @@ object LogProducer extends App {
         Thread.sleep(sleeping)
       }
     }
-    fileWriter.close()
-    val outputFile = FileUtils.getFile(s"${destPath}data_$timeStamp")
-    println(s"Moving produced data to $outputFile")
-    FileUtils.moveFile(FileUtils.getFile(file),outputFile)
-    val sleeping = 5000
-    println(s"sleeping for $sleeping")
+
+    kafkaProducer.close()
+
+    //fileWriter.close()
+    //val outputFile = FileUtils.getFile(s"${destPath}data_$timeStamp")
+    //println(s"Moving produced data to $outputFile")
+    //FileUtils.moveFile(FileUtils.getFile(file),outputFile)
+    //val sleeping = 5000
+    //println(s"sleeping for $sleeping")
   }
 }
